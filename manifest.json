@@ -1,0 +1,6 @@
+{
+  "name": "budget-app",
+  "short_name": "budget-app",
+  "start_url": "/",
+  "display": "standalone"
+}
