@@ -11,9 +11,7 @@ export class BudgetAppStatus extends LitElement {
 
     constructor() {
         super();
-        this.status = 'Unset';
-        this.value = '0.00';
-        this.percentage = '';
+        this.percentage = '--';
     }
 
     static get styles() {
@@ -72,7 +70,7 @@ export class BudgetAppStatus extends LitElement {
         `;
     }
 
-    render() {
+    render() { 
         return html`
             <div class="budget__${this.status} clearfix">
                 <div class="budget__${this.status}--text">${this.status}</div>

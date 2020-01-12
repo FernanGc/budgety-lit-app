@@ -9,9 +9,11 @@ export class BudgetAppSelect extends LitElement {
     constructor() {
         super();
         this.data = [
-            {value: "inc", text: "+", selected: 'selected'},
-            {value: "exp", text: "-", selected: ''}
+            { value: "income", text: "+" },
+            { value: "expenses", text: "-" },
         ];
+
+        this.value = '';
     }
 
     static get styles() {
@@ -33,15 +35,11 @@ export class BudgetAppSelect extends LitElement {
 
     render() {
         return html`
-            <select class="add__type" @change="${this.onChange}">
-                ${this.data.map(option => html`
-                    <option value="${option.value}">${option.text}</option>
-                `)}
+            <select class="add__type" @change="${this.type}">
+                ${this.data.map(option => html`<option value="${option.value}">${option.text}</option>`)}
             </select>
         `;
     }
-
-    // onChange(e) { console.log('withing the component',e) }
 }
 
 customElements.define('budget-app-select', BudgetAppSelect);

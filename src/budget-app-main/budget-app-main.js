@@ -7,6 +7,8 @@ import { BudgetAppSelect } from '../budget-app-select/budget-app-select';
 import { BudgetAppInput } from '../budget-app-input/budget-app-input'; 
 import { BudgetAppButton } from '../budget-app-button/budget-app-button';
 
+import { Manager } from '../controller/manager';
+
 export default class BudgetAppMain extends LitElement {
     static get properties() {
         return {
@@ -17,13 +19,20 @@ export default class BudgetAppMain extends LitElement {
 
     constructor() {
         super();
-        this.add__type = 'inc';
+        this.add__type = 'income';
         this.add__description = '';
         this.add__value = '';
+        this.manager = new Manager();
     }
 
     static get styles() {
-        return css`            
+        return css`
+            .clearfix::after {
+                content: "";
+                display: table;
+                clear: both;
+            }
+
             .top {
                 height: 40vh;
                 background-image: linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url(../../img/back.jpeg);
@@ -41,8 +50,6 @@ export default class BudgetAppMain extends LitElement {
                 position: absolute;
             }
 
-            /* Bottom part */
-
             /* Form */
             .add { 
                 padding: 14px;
@@ -59,6 +66,26 @@ export default class BudgetAppMain extends LitElement {
             }
 
             /* List */
+
+            .income {
+                float: left;
+                width: 475px;
+                margin-right: 50px;
+                color: #28B9B5;
+            }
+
+            .expenses {
+                float: left;
+                width: 475px;
+                color: #FF5049;
+            }
+
+            h2 {
+                text-transform: uppercase;
+                font-size: 18px;
+                font-weight: 400;
+                margin-bottom: 15px;
+            }
 
             .container {
                 width: 1000px;
@@ -82,9 +109,9 @@ export default class BudgetAppMain extends LitElement {
             <div class="top">
                 <div class="budget">
                     <budget-app-title month="December"></budget-app-title>
-                    <budget-app-value value="- 0.00"></budget-app-value>
-                    <budget-app-status status="income" value="+ 4,300.00"></budget-app-status>
-                    <budget-app-status status="expenses" value="- 1,954.36" percentage="45%"></budget-app-status>
+                    <budget-app-value value="- 0.00" id="budgetLabel"></budget-app-value>
+                    <budget-app-status status="income" id="incomeLabel"></budget-app-status>
+                    <budget-app-status status="expenses" id="expensesLabel"></budget-app-status>
                 </div> 
             </div>
 
@@ -93,7 +120,7 @@ export default class BudgetAppMain extends LitElement {
                     <div class="add__container">
                         <budget-app-select
                             id="add__type"
-                            .onChange="${ (e) => this.add__type = e.target.value }">
+                            .type="${ (e) => this.add__type = e.target.value }">
                         </budget-app-select>
                         <budget-app-input
                             id="add__description"
@@ -110,23 +137,152 @@ export default class BudgetAppMain extends LitElement {
                             placeholder="Value"
                             @change="${ (e) => this.add__value = e.detail }">
                         </budget-app-input>
-                        <budget-app-button @add-btn=${this.addNewItem}></budget-app-button>
+                        <budget-app-button @add-btn=${this.addItem}></budget-app-button>
                     </div>
                 </div>
             </div>
 
             <div class="container clearfix">
-                <budget-app-row type="income" description="Salary" value="+ 12,000.00"></budget-app-row>
-                <budget-app-row type="expenses" description="Apartment Rent" value="- 5,000.00" percentage="2%"></budget-app-row>
+                <div class="income">
+                    <h2 class="income__title">Income</h2>
+                    <div class="income__list">
+                
+                    </div>
+                </div>
+
+                <div class="expenses">
+                    <h2 class="expenses__title">Expenses</h2>
+                    <div class="expenses__list">
+
+                    </div>
+                </div>
             </div>
         `;
     }
 
-    addNewItem() { 
-        console.log(this.add__type);
-        console.log(this.add__description);
-        console.log(this.add__value);
 
+    addItem() {
+        // 1. Get the form data
+        let input = this.getInput();
+        const totalncome = this.manager.data.totals.income;
+
+        if (input.description !== "" && !isNaN(input.value) && input.value > 0) {
+
+            // 2. Add the item to the budget controller
+            const newItem =  this.manager.createItem(input.type, input.description, input.value);
+
+            // 3. Add the item to the UI
+            this.addListItem(newItem, input.type, totalncome);
+
+            // 4. Clear the fields
+            this.clearFields();
+
+            // 5. Calculate and update the budget
+            this.updateBudget();
+        }
+    }
+
+    calculatePercentage(value, totalIncome) {
+        if (totalIncome > 0) {
+            return Math.round((value / totalIncome) * 100);
+        } else {
+            return -1;
+        }
+    }
+
+    addListItem(item, type, totalIncome) {
+        const percentage = this.calculatePercentage(item.value, totalIncome);
+
+        if (type === 'income') {
+            const container = this.shadowRoot.querySelector('.income__list');
+
+            const html = `
+                    <budget-app-row
+                        id="income-${item.id}"
+                        type="income"
+                        description="${item.description}"
+                        value="${this.manager.formatNumber(item.value, 'income')}"
+                    </budget-app-row>
+            `;
+
+            container.insertAdjacentHTML('beforeend', html);
+
+        } else if (type === 'expenses') { 
+            const container = this.shadowRoot.querySelector('.expenses__list');
+            
+            const html = `
+                    <budget-app-row 
+                        id="expenses-${item.id}"
+                        type="expenses" 
+                        description="${item.description}" 
+                        value="${this.manager.formatNumber(item.value, 'expenses')}"
+                        percentage="${percentage}%">
+                    </budget-app-row>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', html);
+        }
+    }
+
+    firstUpdated() {
+        this.deleteItems();
+    }
+
+    displayBudget(data) {
+        const budget = this.shadowRoot.querySelector('#budgetLabel');
+        const income = this.shadowRoot.querySelector('#incomeLabel');
+        const expenses = this.shadowRoot.querySelector('#expensesLabel');
+        
+        budget.setAttribute('value', `${this.manager.formatNumber(data.budget, 'income')}`);
+        income.setAttribute('value', `${this.manager.formatNumber(data.totalIncome, 'income')}`);
+        expenses.setAttribute('value', `${this.manager.formatNumber(data.totalExpenses, 'expenses')}`);
+        expenses.setAttribute('percentage', `${this.calculatePercentage(data.totalExpenses, data.totalIncome)}%`);
+    }
+    
+    updateBudget() {
+        // 1. Calculate the budget
+        this.manager.calculateBudget();
+        
+        // 2. Return the budget
+        const budget = this.manager.getBudget();
+        
+        //  3. Desiplay the budget on the UI
+        this.displayBudget(budget);
+    }
+
+    deleteItems() {
+        this.shadowRoot.addEventListener('my-event', (e) => {
+            const item = e.target.id.split('-');
+            const type = item[0];
+            const id = parseInt(item[1]);
+
+            // 1. Delete the item from the data sctructure
+            this.manager.deleteItem(type, id);
+
+            // 2. delete item from the user interface
+            this.deleteListItem(e.target.id);
+
+            // 3 Update the new busget
+            this.updateBudget();
+
+            // 4. Calculate and update the percentages
+        });
+    }
+
+    deleteListItem(selectorId) {
+        const el = this.shadowRoot.getElementById(selectorId);
+        el.parentNode.removeChild(el);
+    }
+
+    getInput() {
+        return {
+            type: this.add__type,
+            description: this.add__description,
+            value: this.add__value
+        }
+    }
+
+    clearFields() {
         this.add__description = '';
         this.add__value = '';
     }

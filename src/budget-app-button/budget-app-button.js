@@ -4,6 +4,7 @@ export class BudgetAppButton extends LitElement {
     
     constructor() {
         super();
+        this.cont = 1;
     }
 
     static get styles() {
@@ -34,10 +35,7 @@ export class BudgetAppButton extends LitElement {
     }
 
     handleClick() {
-        let myEvent = new CustomEvent('add-btn', {
-            bubbles: true,
-            composed: true});
-
+        let myEvent = new CustomEvent('add-btn', { bubbles: true, composed: true});
         this.dispatchEvent(myEvent);
     }
 }

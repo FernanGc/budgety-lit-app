@@ -3,6 +3,7 @@ import { LitElement, html, css } from 'lit-element';
 export class BudgetAppRow extends LitElement {
     static get properties() {
         return {
+            id: { type: String },
             type: { type: String },
             description: {type: String},
             value: {type: String},
@@ -27,25 +28,6 @@ export class BudgetAppRow extends LitElement {
 
             .right { float: right; }
 
-            /* List */
-            .income {
-                float: left;
-                width: 475px;
-                margin-right: 50px;
-            }
-
-            .expenses {
-                float: left;
-                width: 475px;
-            }
-
-            h2 {
-                text-transform: uppercase;
-                font-size: 18px;
-                font-weight: 400;
-                margin-bottom: 15px;
-            }
-
             .income__title {
                 color: #28B9B5;
             }
@@ -54,13 +36,13 @@ export class BudgetAppRow extends LitElement {
                 color: #FF5049;
             }
 
+            /* .item:first-child { border-top: 1px solid #e7e7e7; } */
+            /* .item:nth-child(even) { background-color: #f7f7f7; } */
+
             .item {
                 padding: 13px;
                 border-bottom: 1px solid #e7e7e7;
             }
-
-            .item:first-child { border-top: 1px solid #e7e7e7; }
-            .item:nth-child(even) { background-color: #f7f7f7; }
 
             .item__description {
                 float: left;
@@ -99,6 +81,7 @@ export class BudgetAppRow extends LitElement {
             }
 
             .item__delete--btn {
+                color: inherit;
                 font-size: 19px;
                 font-weight: 200;
                 background: none;
@@ -121,25 +104,26 @@ export class BudgetAppRow extends LitElement {
 
     render() {
         return html `
-            <div class="${this.type}">
-                <h2 class="${this.type}__title">Income</h2>
-                <div class="${this.type}__list">
-                    <div class="item clearfix">
-                        <div class="item__description">${this.description}</div>
-                        <div class="right clearfix">
-                            <div class="item__value"> + 900.00</div>
-                            ${this.percentage ? html`<div class="item__percentage">${this.percentage}</div>` : ''}
-                            <div class="item__delete">
-                                <button class="item__delete--btn">
-                                    <span>x</span>
-                                </button>
-                            </div>
-                        </div>
+            <div class="item clearfix" id="${this.id}">
+                <div class="item__description">${this.description}</div>
+                <div class="right clearfix">
+                    <div class="item__value">${this.value}</div>
+                    ${this.percentage ? html`<div class="item__percentage">${this.percentage}</div>` : ''}
+                    <div class="item__delete">
+                        <button class="item__delete--btn" @click="${this.handleClick}">
+                            <span>x</span>
+                        </button>
                     </div>
                 </div>
             </div>
         `;
     }
+
+    handleClick(e) {
+        let myEvent = new CustomEvent('my-event', { bubbles: true, composed: true });
+        this.dispatchEvent(myEvent);
+    }
+    
 };
 
 customElements.define('budget-app-row', BudgetAppRow);
